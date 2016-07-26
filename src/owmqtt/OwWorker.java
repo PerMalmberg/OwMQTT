@@ -1,3 +1,6 @@
+// Copyright (c) 2016 Per Malmberg
+// Licensed under MIT, see LICENSE file.
+
 package owmqtt;
 
 import jowshell.Discovery;
@@ -5,30 +8,27 @@ import jowshell.logging.ILogger;
 import jowshell.system.ICommandExecution;
 import jowshell.system.IExecute;
 import jowshell.system.ShellExecute;
-import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence;
 
 import java.util.Arrays;
 
-public class Worker extends Thread implements ILogger, ICommandExecution {
-	private final MqttClient mqtt;
+public class OwWorker extends Thread implements ILogger, ICommandExecution {
 	private final Discovery discovery;
 	private final IExecute myExec = new ShellExecute(this);
 
-	public Worker(String owserver, String mqttBroker, String mqttClientId, String persistenceLocation) throws MqttException {
-		MqttDefaultFilePersistence persistence = new MqttDefaultFilePersistence(persistenceLocation);
-		mqtt = new MqttClient(mqttBroker, mqttClientId, persistence);
+	public OwWorker(String owserver) throws MqttException {
 		discovery = new Discovery(owserver, this, this);
 	}
 
 	@Override
 	public void run() {
+
+
 		do {
 			try {
 				sleep(1000);
 			} catch (InterruptedException e) {
-
+				e.printStackTrace();
 			}
 			debug(".");
 		}

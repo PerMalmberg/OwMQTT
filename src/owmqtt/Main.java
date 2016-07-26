@@ -1,3 +1,6 @@
+// Copyright (c) 2016 Per Malmberg
+// Licensed under MIT, see LICENSE file.
+
 package owmqtt;
 
 import cmdparser4j.CmdParser4J;
@@ -22,11 +25,15 @@ public class Main {
 			if (!cmd.parse(args)) {
 				System.out.println(result.getParseResult());
 			} else {
-				Worker worker;
+				OwWorker owWorker;
 				try {
-					worker = new Worker(cmd.getString("--owserver"), cmd.getString("--broker"), cmd.getString("--mqttClientId" ), cmd.getString("--mqttPersistenceLocation"));
-					worker.start();
-					worker.join();
+					MQTTWorker mqtt = new MQTTWorker(cmd.getString("--broker"), cmd.getString("--mqttClientId" ), cmd.getString("--mqttPersistenceLocation"));
+					mqtt.start();
+					mqtt.publish("test", "test data");
+
+					owWorker = new OwWorker(cmd.getString("--owserver") );
+					owWorker.start();
+					owWorker.join();
 				} catch (MqttException | InterruptedException e) {
 					e.printStackTrace();
 				}
