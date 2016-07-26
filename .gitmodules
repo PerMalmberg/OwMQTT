@@ -1,0 +1,6 @@
+[submodule "externals/JOwShell"]
+	path = externals/JOwShell
+	url = https://github.com/PerMalmberg/JOwShell.git
+[submodule "externals/CmdParser4J"]
+	path = externals/CmdParser4J
+	url = https://github.com/PerMalmberg/CmdParser4J.git
