@@ -4,6 +4,3 @@
 [submodule "externals/CmdParser4J"]
 	path = externals/CmdParser4J
 	url = https://github.com/PerMalmberg/CmdParser4J.git
-[submodule "externals/PahoMqtt"]
-	path = externals/PahoMqtt
-	url = https://github.com/eclipse/paho.mqtt.java.git
