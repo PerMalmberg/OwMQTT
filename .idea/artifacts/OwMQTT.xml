@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="OwMQTT">
+    <output-path>$PROJECT_DIR$/out/artifacts/OwMQTT</output-path>
+    <root id="archive" name="OwMQTT.jar">
+      <element id="module-output" name="OwMQTT" />
+      <element id="module-output" name="JOwShell" />
+      <element id="module-output" name="CmdParser4J" />
+    </root>
+  </artifact>
+</component>
