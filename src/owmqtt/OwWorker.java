@@ -5,6 +5,7 @@ package owmqtt;
 
 import jowshell.Discovery;
 import jowshell.Network;
+import jowshell.items.OwData;
 import jowshell.items.OwDevice;
 import jowshell.logging.ILogger;
 import jowshell.system.ICommandExecution;
@@ -14,6 +15,7 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -47,7 +49,7 @@ public class OwWorker extends Thread implements ILogger, ICommandExecution {
 					subscribeToWritableProperties(net);
 					while (!isInterrupted()) {
 						publishProps(getNextDevice(net));
-						handleMessage(myMqtt.getIncomingMessages().poll());
+						handleMessage(myMqtt.getIncomingMessages().poll(), net);
 					}
 				} else {
 					error("Failed to discover network, sleeping for a minute");
@@ -60,9 +62,28 @@ public class OwWorker extends Thread implements ILogger, ICommandExecution {
 		while (!isInterrupted());
 	}
 
-	private void handleMessage(Map.Entry<String, MqttMessage> pair) {
+	private void handleMessage(Map.Entry<String, MqttMessage> pair, Network net) {
 		if (pair != null) {
-			int foo = 0;//qqq
+			String topic = pair.getKey();
+			MqttMessage msg = pair.getValue();
+
+			String[] split = topic.split("/");
+			if( split.length > 0) {
+				String deviceName = split[0];
+
+				OwDevice device = net.getAllDevices().get(deviceName);
+				if (device != null) {
+					HashMap<String, OwData> data = device.getData();
+					String propName = topic.replace(deviceName, "");
+					if (propName.startsWith("/")) {
+						propName = propName.substring(1, propName.length());
+					}
+					OwData owData = data.get(propName);
+					if (owData.isWritable(this)) {
+						owData.write(this, new String(msg.getPayload()));
+					}
+				}
+			}
 		}
 	}
 
@@ -70,14 +91,20 @@ public class OwWorker extends Thread implements ILogger, ICommandExecution {
 		device.getData().values().stream().filter(data -> data.isReadable(this)).forEach(data -> {
 			String s = data.read(this);
 			s = s == null ? "" : s.trim();
-			myMqtt.publish(device.getName() + "/" + data.getFullPropertyName(), s, Qos.ExactlyOnce);
+
+			// If writable, we don't want the MQTT broker to retain the message because that will
+			// result in us receiving it on connect and thus writing it to the device, which may have changed
+			// since we last were connected
+			boolean retain = !data.isWritable(this);
+
+			myMqtt.publish(device.getName() + "/" + data.getFullPropertyName(), s, Qos.ExactlyOnce, retain);
 		});
 	}
 
 	private void subscribeToWritableProperties(Network net) {
 		for (OwDevice dev : net.getAllDevices().values()) {
 			dev.getData().values().stream().filter(data -> data.isWritable(this)).forEach(data -> {
-				myMqtt.subscribe(dev.getName() + "/" + data.getFullPropertyName(), Qos.ExactlyOnce);
+				myMqtt.subscribe(dev.getName() + "/" + data.getFullPropertyName());
 			});
 
 		}

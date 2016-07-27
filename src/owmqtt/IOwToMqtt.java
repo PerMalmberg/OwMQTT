@@ -9,9 +9,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public interface IOwToMqtt {
-	void subscribe(String topic, Qos qos);
+	void subscribe(String topic);
 
-	void publish(String topic, String content, Qos qos);
+	void publish(String topic, String content, Qos qos, boolean retain);
 
 	ConcurrentLinkedQueue<Map.Entry<String, MqttMessage>> getIncomingMessages();
 }

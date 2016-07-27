@@ -24,9 +24,10 @@ public class Main {
 		cmd.accept("--broker").asString(1).withAlias("-b").describedAs("The address to the MQTT broker, i.e. tcp://yourserver.tld:1833").setMandatory();
 		cmd.accept("--mqttPersistenceLocation").asString(1).withAlias("-p").describedAs("Path to where MQTT persistence database will be stored. Can be shared with other clients.").setMandatory();
 		cmd.accept("--mqttClientId").asString(1).withAlias("-i").describedAs("MQTT client id").setMandatory();
-		cmd.accept("--owTopicRoot").asString(1).withAlias("-t").describedAs("The root topic used to publish 1-Wire data. e.g. '/MyRoot/'").setMandatory();
+		cmd.accept("--mqttWriteTopicRoot").asString(1).withAlias("-w").describedAs("Root topic for topics that are used to write to devices").setMandatory();
+		cmd.accept("--mqttReadTopicRoot").asString(1).withAlias("-r").describedAs("The root topic used to publish 1-Wire data. e.g. '/MyRoot/'").setMandatory();
 		cmd.accept("--debug").asSingleBoolean().describedAs("If specified, debug logging is enabled");
-		cmd.accept("--owTimeout").asInteger(1, 1, new NumericLimit<Integer>(1500, 5000)).describedAs("1-Wire command timeout. 1500-5000ms");
+		cmd.accept("--owTimeout").asInteger(1, 1, new NumericLimit<>(1500, 5000)).describedAs("1-Wire command timeout. 1500-5000ms");
 
 		int owTimeout =  cmd.getInteger("--owTimeout", 0, 2000);
 
@@ -38,7 +39,7 @@ public class Main {
 				OwWorker owWorker;
 				MQTTWorker mqtt = null;
 				try {
-					mqtt = new MQTTWorker(cmd.getString("--broker"), cmd.getString("--mqttClientId" ), cmd.getString("--mqttPersistenceLocation"), cmd.getString("--owTopicRoot"), cmd.getBool("--debug"));
+					mqtt = new MQTTWorker(cmd.getString("--broker"), cmd.getString("--mqttClientId" ), cmd.getString("--mqttPersistenceLocation"), cmd.getString("--mqttReadTopicRoot"), cmd.getString("--mqttWriteTopicRoot"), cmd.getBool("--debug"));
 					mqtt.start();
 
 					owWorker = new OwWorker(cmd.getString("--owserver"), mqtt, cmd.getBool("--debug"), owTimeout );

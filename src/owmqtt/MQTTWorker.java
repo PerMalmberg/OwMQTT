@@ -15,16 +15,23 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class MQTTWorker implements MqttCallback, IOwToMqtt {
 	private final MqttClient mqtt;
 	private final ConcurrentLinkedQueue<Map.Entry<String, MqttMessage>> myIncoming = new ConcurrentLinkedQueue<>();
-	private final String myTopicRoot;
+	private final String myReadTopicRoot;
+	private final String myWriteTopicRoot;
 	private final boolean myDebugLogging;
 
-	public MQTTWorker(String mqttBroker, String mqttClientId, String persistenceLocation, String topicRoot, boolean debugLog) throws MqttException {
+	public MQTTWorker(String mqttBroker, String mqttClientId, String persistenceLocation, String readTopicRoot, String writeTopicRoot, boolean debugLog) throws MqttException {
 		myDebugLogging = debugLog;
 
-		if (!topicRoot.endsWith("/")) {
-			myTopicRoot = topicRoot + "/";
+		if (!readTopicRoot.endsWith("/")) {
+			myReadTopicRoot = readTopicRoot + "/";
 		} else {
-			myTopicRoot = topicRoot;
+			myReadTopicRoot = readTopicRoot;
+		}
+
+		if (!writeTopicRoot.endsWith("/")) {
+			myWriteTopicRoot = writeTopicRoot + "/";
+		} else {
+			myWriteTopicRoot = writeTopicRoot;
 		}
 
 		mqtt = new MqttClient(mqttBroker, mqttClientId, new MqttDefaultFilePersistence(persistenceLocation));
@@ -47,7 +54,11 @@ public class MQTTWorker implements MqttCallback, IOwToMqtt {
 	@Override
 	public void messageArrived(String s, MqttMessage mqttMessage) throws Exception {
 		debug("Incoming message:" + s + mqttMessage.toString());
-		myIncoming.add(new AbstractMap.SimpleEntry<>(s, mqttMessage));
+		// We're only interested in messages targeting our writable root
+		if( s.startsWith( myWriteTopicRoot)) {
+			s = s.replace(myWriteTopicRoot, "");
+			myIncoming.add(new AbstractMap.SimpleEntry<>(s, mqttMessage));
+		}
 	}
 
 	@Override
@@ -56,23 +67,22 @@ public class MQTTWorker implements MqttCallback, IOwToMqtt {
 	}
 
 	@Override
-	public void subscribe(String topic, Qos qos) {
+	public void subscribe(String topic) {
 		try {
-			String fullTopic = myTopicRoot + topic;
+			// Subscribe to the writable root
+			String fullTopic = myWriteTopicRoot + topic;
 			debug("Subscribe to: " + fullTopic);
-			mqtt.subscribe(fullTopic, qos.getValue());
+			mqtt.subscribe(fullTopic, Qos.ExactlyOnce.getValue());
 		} catch (MqttException e) {
 			error(e);
 		}
 	}
 
 	@Override
-	public void publish(String topic, String content, Qos qos) {
+	public void publish(String topic, String content, Qos qos, boolean retain) {
 		try {
 			debug("Publish: " + topic + ":" + content);
-
-			// Publish with retain flag enabled.
-			mqtt.publish(myTopicRoot + topic, content == null ? "".getBytes() : content.getBytes(), qos.getValue(), true);
+			mqtt.publish(myReadTopicRoot + topic, content == null ? "".getBytes() : content.getBytes(), qos.getValue(), retain);
 		} catch (MqttException e) {
 			error(e);
 		}
