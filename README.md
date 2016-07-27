@@ -5,6 +5,7 @@ OneWire to MQTT bridge
   * Uses ow-shell commands to read all properties of all devices attached to all 1-Wire adapters.
   * Publishes all properties to an MQTT broker.
   * Can write data to 1-Wire devices via MQTT-messages.
+  * Supports the alias-feature of OWFS (devices are named 'MyName' instead of the default <family>.<address>)
  
 ## Reqirements
   * Java 8
