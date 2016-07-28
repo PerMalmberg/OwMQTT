@@ -26,12 +26,14 @@ public class OwWorker extends Thread implements ILogger, ICommandExecution {
 	private Iterator<OwDevice> myDevIt = null;
 	private final boolean myDebugLog;
 	private final int myCmdTimeout;
+	private String myNoValue;
 
-	public OwWorker(String owserver, IOwToMqtt owToMqtt, boolean debugLog, int cmdTimeout) throws MqttException {
+	public OwWorker(String owserver, IOwToMqtt owToMqtt, boolean debugLog, int cmdTimeout, String noValue) throws MqttException {
 		discovery = new Discovery(owserver, this, this);
 		myMqtt = owToMqtt;
 		myDebugLog = debugLog;
 		myCmdTimeout = cmdTimeout;
+		myNoValue = noValue;
 	}
 
 	@Override
@@ -68,7 +70,7 @@ public class OwWorker extends Thread implements ILogger, ICommandExecution {
 			MqttMessage msg = pair.getValue();
 
 			String[] split = topic.split("/");
-			if( split.length > 0) {
+			if (split.length > 0) {
 				String deviceName = split[0];
 
 				OwDevice device = net.getAllDevices().get(deviceName);
@@ -90,14 +92,25 @@ public class OwWorker extends Thread implements ILogger, ICommandExecution {
 	private void publishProps(OwDevice device) {
 		device.getData().values().stream().filter(data -> data.isReadable(this)).forEach(data -> {
 			String s = data.read(this);
-			s = s == null ? "" : s.trim();
+			if (s == null) {
+				if (myNoValue != null) {
+					s = myNoValue;
+				}
+			} else {
+				s = s.trim();
+			}
 
-			// If writable, we don't want the MQTT broker to retain the message because that will
-			// result in us receiving it on connect and thus writing it to the device, which may have changed
-			// since we last were connected
-			boolean retain = !data.isWritable(this);
+			if( s == null) {
+				error("Could not read data from " + data.getFullPath());
+			}
+			else {
+				// If writable, we don't want the MQTT broker to retain the message because that will
+				// result in us receiving it on connect and thus writing it to the device, which may have changed
+				// since we last were connected
+				boolean retain = !data.isWritable(this);
 
-			myMqtt.publish(device.getName() + "/" + data.getFullPropertyName(), s, Qos.ExactlyOnce, retain);
+				myMqtt.publish(device.getName() + "/" + data.getFullPropertyName(), s, Qos.ExactlyOnce, retain);
+			}
 		});
 	}
 

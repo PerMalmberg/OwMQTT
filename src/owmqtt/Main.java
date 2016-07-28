@@ -28,6 +28,7 @@ public class Main {
 		cmd.accept("--mqttReadTopicRoot").asString(1).withAlias("-r").describedAs("The root topic used to publish 1-Wire data. e.g. '/MyRoot/'").setMandatory();
 		cmd.accept("--debug").asSingleBoolean().describedAs("If specified, debug logging is enabled");
 		cmd.accept("--owTimeout").asInteger(1, 1, new NumericLimit<>(1500, 5000)).describedAs("1-Wire command timeout. 1500-5000ms");
+		cmd.accept("--noValue").asString(1).describedAs("The value to report when the value cannot be read from the device. Mainly for debugging purposes.");
 
 		int owTimeout =  cmd.getInteger("--owTimeout", 0, 2000);
 
@@ -42,7 +43,7 @@ public class Main {
 					mqtt = new MQTTWorker(cmd.getString("--broker"), cmd.getString("--mqttClientId" ), cmd.getString("--mqttPersistenceLocation"), cmd.getString("--mqttReadTopicRoot"), cmd.getString("--mqttWriteTopicRoot"), cmd.getBool("--debug"));
 					mqtt.start();
 
-					owWorker = new OwWorker(cmd.getString("--owserver"), mqtt, cmd.getBool("--debug"), owTimeout );
+					owWorker = new OwWorker(cmd.getString("--owserver"), mqtt, cmd.getBool("--debug"), owTimeout, cmd.getString("--noValue", 0, null) );
 					owWorker.start();
 					owWorker.join();
 				} catch (MqttException | InterruptedException e) {
