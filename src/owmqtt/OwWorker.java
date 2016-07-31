@@ -14,10 +14,8 @@ import jowshell.system.ShellExecute;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 public class OwWorker extends Thread implements ILogger, ICommandExecution {
 	Discovery discovery;
@@ -48,6 +46,8 @@ public class OwWorker extends Thread implements ILogger, ICommandExecution {
 				if (discovery.discoverTree()) {
 					// Subscribe to writable properties.
 					Network net = discovery.getNetwork();
+					info( net.getAllDevices().size() + " devices found");
+
 					subscribeToWritableProperties(net);
 					while (!isInterrupted()) {
 						publishProps(getNextDevice(net));
@@ -126,23 +126,29 @@ public class OwWorker extends Thread implements ILogger, ICommandExecution {
 	@Override
 	public void debug(String msg) {
 		if (myDebugLog) {
-			System.out.println(msg);
+			System.out.println( prefixTime( msg ));
 		}
+	}
+
+	private String prefixTime(String msg) {
+		String timeStamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
+		return timeStamp + ": " + msg;
+
 	}
 
 	@Override
 	public void error(String msg) {
-		System.err.println(msg);
+		System.err.println(prefixTime( msg ));
 	}
 
 	public void info(String msg) {
-		System.out.println(msg);
+		System.out.println(prefixTime( msg ));
 	}
 
 	@Override
 	public void error(Exception ex) {
-		System.out.println(ex.getMessage());
-		System.out.println(Arrays.toString(ex.getStackTrace()));
+		error(ex.getMessage());
+		error(Arrays.toString(ex.getStackTrace()));
 	}
 
 	@Override
